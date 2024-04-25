@@ -1,33 +1,23 @@
-#!/usr/bin/env python3
-
 from random import randint
-
 from faker import Faker
-
-from app import app
-from models import db, Article, User
+from app import app, db
+from models import Article, User
 
 fake = Faker()
 
 with app.app_context():
-
     print("Deleting all records...")
-    Article.query.delete()
-    User.query.delete()
-
-    fake = Faker()
+    db.drop_all()
+    db.create_all()
 
     print("Creating users...")
     users = []
     usernames = []
     for i in range(25):
-
         username = fake.first_name()
         while username in usernames:
             username = fake.first_name()
-        
         usernames.append(username)
-
         user = User(username=username)
         users.append(user)
 

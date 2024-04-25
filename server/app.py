@@ -1,10 +1,11 @@
 from flask import Flask, jsonify, request, session
+from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
-from models import db, Article, User
+from models import db, User
 
 app = Flask(__name__)
-app.secret_key = b'Y\xf1Xz\x00\xad|eQ\x80t \xca\x1a\x10K'
+app.secret_key = b'a\xdb\xd2\x13\x93\xc1\xe9\x97\xef2\xe3\x004U\xd1Z'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -22,16 +23,15 @@ class Login(Resource):
         username = data['username']
 
         try:
-        
             user = User.query.filter_by(username=username).first()
 
             if user:
                 session['user_id'] = user.id
-                return jsonify({'message': 'Logged in successfully', 'user': user.to_dict()}), 200
+                return {'id': user.id, 'username': user.username}, 200
             else:
                 return {'message': 'User not found'}, 404
         except Exception as e:
-            return {'message': 'An error occurred while processing the request.'}, 500
+            return {'message': 'An error occurred while processing the request.', 'error': str(e)}, 500
 
 class Logout(Resource):
     def delete(self):
@@ -45,46 +45,18 @@ class CheckSession(Resource):
         if user_id:
             try:
                 user = User.query.get(user_id)
-                return jsonify({'user': user.to_dict()}), 200
-            except Exception as e:
-                return {'message': 'An error occurred while processing the request.'}, 500
-        else:
-            return {}, 401
-
-class ClearSession(Resource):
-    def delete(self):
-        
-        session.clear()
-        return {}, 204
-
-class IndexArticle(Resource):
-    def get(self):
-        articles = [article.to_dict() for article in Article.query.all()]
-        return articles, 200
-
-class ShowArticle(Resource):
-    def get(self, id):
-        session['page_views'] = 0 if not session.get('page_views') else session.get('page_views')
-        session['page_views'] += 1
-
-        if session['page_views'] <= 3:
-            try:
-                article = Article.query.filter(Article.id == id).first()
-                if article:
-                    return jsonify(article.to_dict()), 200
+                if user:
+                    return {'id': user.id, 'username': user.username}, 200
                 else:
-                    return {'message': 'Article not found'}, 404
+                    return {'message': 'User not found'}, 404
             except Exception as e:
-                return {'message': 'An error occurred while processing the request.'}, 500
+                return {'message': 'An error occurred while processing the request.', 'error': str(e)}, 500
         else:
-            return {'message': 'Maximum pageview limit reached'}, 401
+            return {}, 401  
 
 api.add_resource(Login, '/login')
 api.add_resource(Logout, '/logout')
 api.add_resource(CheckSession, '/check_session')
-api.add_resource(ClearSession, '/clear')
-api.add_resource(IndexArticle, '/articles')
-api.add_resource(ShowArticle, '/articles/<int:id>')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
